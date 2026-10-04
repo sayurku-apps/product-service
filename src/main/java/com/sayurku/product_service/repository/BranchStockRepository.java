@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -27,13 +28,16 @@ public interface BranchStockRepository extends JpaRepository<BranchStock, UUID> 
     @EntityGraph(attributePaths = {"branch", "product", "product.category"})
     List<BranchStock> findByProductIdAndBranchIsActiveTrueOrderByBranchNameAsc(UUID productId);
 
-    // Kurangi stok dalam SATU perintah UPDATE bersyarat. Kalau stok kurang, 0 baris berubah.
+    // Kurangi stok dalam SATU perintah UPDATE bersyarat. Kalau stok kurang atau sudah tidak segar
+    // (dipanen sebelum minHarvestDate), 0 baris berubah.
     // Dua checkout bersamaan tidak bisa membuat stok minus: database yang menjaga.
     @Modifying
     @Query("""
             update BranchStock s set s.stock = s.stock - :qty, s.updatedAt = current_timestamp
-            where s.product.id = :productId and s.branch.id = :branchId and s.stock >= :qty""")
-    int decreaseStock(@Param("productId") UUID productId, @Param("branchId") UUID branchId, @Param("qty") int qty);
+            where s.product.id = :productId and s.branch.id = :branchId and s.stock >= :qty
+              and s.harvestDate >= :minHarvestDate""")
+    int decreaseStock(@Param("productId") UUID productId, @Param("branchId") UUID branchId, @Param("qty") int qty,
+                      @Param("minHarvestDate") LocalDate minHarvestDate);
 
     // Kembalikan stok (pesanan batal)
     @Modifying

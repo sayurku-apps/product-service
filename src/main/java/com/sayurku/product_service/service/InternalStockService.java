@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -44,13 +45,23 @@ public class InternalStockService {
         for (StockMovementRequest.Item item : request.items()) {
             Product product = productService.getEntityById(item.productId());   // 404 kalau tidak aktif
 
-            int updated = branchStockRepository.decreaseStock(item.productId(), branchId, item.quantity());
+            // Masih segar = dipanen paling lama freshnessDays hari yang lalu (sama dengan BranchStock.isStillFresh)
+            LocalDate minHarvestDate = LocalDate.now().minusDays(product.getFreshnessDays());
+            int updated = branchStockRepository.decreaseStock(item.productId(), branchId, item.quantity(), minHarvestDate);
             if (updated == 0) {
-                throw new InsufficientStockException("Stok " + product.getName() + " di cabang ini tidak cukup");
+                throw new InsufficientStockException(rejectReason(product, branchId, item.quantity()));
             }
             snapshots.add(InternalProductResponse.from(product));
         }
         return snapshots;
+    }
+
+    // Pengurangan stok ditolak: cari tahu kenapa, supaya pesannya jelas untuk pembeli
+    private String rejectReason(Product product, UUID branchId, int quantity) {
+        return branchStockRepository.findByProductIdAndBranchId(product.getId(), branchId)
+                .filter(s -> s.getStock() >= quantity && !s.isStillFresh())
+                .map(s -> "Stok " + product.getName() + " di cabang ini sudah tidak segar")
+                .orElse("Stok " + product.getName() + " di cabang ini tidak cukup");
     }
 
     /** Pesanan batal: stok dikembalikan ke cabang */

@@ -4,6 +4,7 @@ import com.sayurku.product_service.dto.BranchRequest;
 import com.sayurku.product_service.dto.BranchResponse;
 import com.sayurku.product_service.dto.BranchStockRequest;
 import com.sayurku.product_service.dto.BranchStockResponse;
+import com.sayurku.product_service.security.AccessPolicy;
 import com.sayurku.product_service.service.BranchService;
 import com.sayurku.product_service.service.BranchStockService;
 import jakarta.validation.Valid;
@@ -36,12 +37,16 @@ public class BranchController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public BranchResponse create(@Valid @RequestBody BranchRequest request) {
+    public BranchResponse create(@RequestHeader(AccessPolicy.ROLE) String role,
+                                 @Valid @RequestBody BranchRequest request) {
+        AccessPolicy.requireAdmin(role);
         return branchService.create(request);
     }
 
     @PutMapping("/{id}")
-    public BranchResponse update(@PathVariable UUID id, @Valid @RequestBody BranchRequest request) {
+    public BranchResponse update(@RequestHeader(AccessPolicy.ROLE) String role,
+                                 @PathVariable UUID id, @Valid @RequestBody BranchRequest request) {
+        AccessPolicy.requireAdmin(role);
         return branchService.update(id, request);
     }
 
@@ -51,10 +56,14 @@ public class BranchController {
         return new PagedModel<>(branchStockService.findByBranch(id, pageable));
     }
 
+    // ADMIN: cabang mana pun. STAFF: hanya cabangnya sendiri.
     @PutMapping("/{id}/stocks/{productId}")
-    public BranchStockResponse upsertStock(@PathVariable UUID id,
+    public BranchStockResponse upsertStock(@RequestHeader(AccessPolicy.ROLE) String role,
+                                           @RequestHeader(value = AccessPolicy.BRANCH_ID, required = false) UUID userBranchId,
+                                           @PathVariable UUID id,
                                            @PathVariable UUID productId,
                                            @Valid @RequestBody BranchStockRequest request) {
+        AccessPolicy.requireBranchAccess(role, userBranchId, id);
         return branchStockService.upsert(id, productId, request);
     }
 }

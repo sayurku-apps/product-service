@@ -3,6 +3,7 @@ package com.sayurku.product_service.controller;
 import com.sayurku.product_service.dto.BranchStockResponse;
 import com.sayurku.product_service.dto.ProductRequest;
 import com.sayurku.product_service.dto.ProductResponse;
+import com.sayurku.product_service.security.AccessPolicy;
 import com.sayurku.product_service.service.BranchStockService;
 import com.sayurku.product_service.service.ProductService;
 import jakarta.validation.Valid;
@@ -43,18 +44,23 @@ public class ProductController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public ProductResponse create(@Valid @RequestBody ProductRequest request) {
+    public ProductResponse create(@RequestHeader(AccessPolicy.ROLE) String role,
+                                  @Valid @RequestBody ProductRequest request) {
+        AccessPolicy.requireAdmin(role);
         return productService.create(request);
     }
 
     @PutMapping("/{id}")
-    public ProductResponse update(@PathVariable UUID id, @Valid @RequestBody ProductRequest request) {
+    public ProductResponse update(@RequestHeader(AccessPolicy.ROLE) String role,
+                                  @PathVariable UUID id, @Valid @RequestBody ProductRequest request) {
+        AccessPolicy.requireAdmin(role);
         return productService.update(id, request);
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable UUID id) {
+    public void delete(@RequestHeader(AccessPolicy.ROLE) String role, @PathVariable UUID id) {
+        AccessPolicy.requireAdmin(role);
         productService.softDelete(id);
     }
 }

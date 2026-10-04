@@ -35,7 +35,7 @@ public class ProductService {
         return ProductResponse.from(getEntityById(id));
     }
 
-    // create & update dipanggil admin (wajib login), jadi respons menyertakan harga modal
+    // create & update hanya untuk ADMIN (dicek di controller), jadi respons menyertakan harga modal
 
     @Transactional
     public ProductResponse create(ProductRequest request) {

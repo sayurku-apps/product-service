@@ -2,6 +2,7 @@ package com.sayurku.product_service.controller;
 
 import com.sayurku.product_service.dto.CategoryRequest;
 import com.sayurku.product_service.dto.CategoryResponse;
+import com.sayurku.product_service.security.AccessPolicy;
 import com.sayurku.product_service.service.CategoryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +25,9 @@ public class CategoryController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public CategoryResponse create(@Valid @RequestBody CategoryRequest request) {
+    public CategoryResponse create(@RequestHeader(AccessPolicy.ROLE) String role,
+                                   @Valid @RequestBody CategoryRequest request) {
+        AccessPolicy.requireAdmin(role);
         return categoryService.create(request);
     }
 }
