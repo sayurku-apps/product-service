@@ -6,10 +6,10 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.util.UUID;
 import java.time.LocalDateTime;
-import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
 
 
+// Katalog pusat: satu produk berlaku untuk semua cabang dengan harga jual yang sama.
+// Stok dan tanggal panen per cabang ada di BranchStock.
 @Entity
 @Table(name = "products")
 @Getter
@@ -26,10 +26,6 @@ public class Product {
     @JoinColumn(name = "category_id", nullable = false)
     private Category category;
 
-    // Vendor ada di SERVICE LAIN -> cuma disimpan ID-nya, tanpa relasi
-    @Column(name = "vendor_id", nullable = false)
-    private UUID vendorId;
-
     @Column(nullable = false, length = 200)
     private String name;
 
@@ -37,18 +33,17 @@ public class Product {
     private String description;
 
     @Column(nullable = false, precision = 10, scale = 2)
-    private BigDecimal price;
+    private BigDecimal price;         // harga jual
+
+    // Harga modal. Rahasia dapur: jangan ditampilkan ke pembeli.
+    // Margin = price - costPrice, disalin ke order item saat checkout.
+    @Column(name = "cost_price", nullable = false, precision = 10, scale = 2)
+    private BigDecimal costPrice;
 
     @Column(nullable = false, length = 20)
     private String unit;              // kg / ikat / buah
 
-    @Column(nullable = false)
-    @Builder.Default
-    private Integer stock = 0;
-
-    @Column(name = "harvest_date", nullable = false)
-    private LocalDate harvestDate;
-
+    // Sifat sayurnya (bayam tahan 2 hari, kentang 30 hari), jadi tetap di katalog
     @Column(name = "freshness_days", nullable = false)
     private Integer freshnessDays;
 
@@ -75,24 +70,4 @@ public class Product {
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
     }
-
-    // ---------- logika domain ----------
-
-    /** Tanggal produk ini nggak segar lagi */
-    public LocalDate expiryDate() {
-        return harvestDate.plusDays(freshnessDays);
-    }
-
-    /** Masih segar hari ini? */
-    public boolean isStillFresh() {
-        return !LocalDate.now().isAfter(expiryDate());
-    }
-
-    /** Sisa hari kesegaran, 0 kalau udah lewat */
-    public long remainingFreshnessDays() {
-        long left = ChronoUnit.DAYS.between(LocalDate.now(), expiryDate());
-        return Math.max(left, 0);
-    }
 }
-
-

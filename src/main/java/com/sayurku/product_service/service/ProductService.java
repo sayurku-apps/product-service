@@ -2,7 +2,6 @@ package com.sayurku.product_service.service;
 
 import com.sayurku.product_service.dto.ProductRequest;
 import com.sayurku.product_service.dto.ProductResponse;
-import com.sayurku.product_service.dto.StockUpdateRequest;
 import com.sayurku.product_service.entity.Category;
 import com.sayurku.product_service.entity.Product;
 import com.sayurku.product_service.exception.ResourceNotFoundException;
@@ -36,25 +35,25 @@ public class ProductService {
         return ProductResponse.from(getEntityById(id));
     }
 
+    // create & update dipanggil admin (wajib login), jadi respons menyertakan harga modal
+
     @Transactional
     public ProductResponse create(ProductRequest request) {
         Category category = categoryService.getEntityById(request.categoryId());
 
         Product product = Product.builder()
                 .category(category)
-                .vendorId(request.vendorId())
                 .name(request.name())
                 .description(request.description())
                 .price(request.price())
+                .costPrice(request.costPrice())
                 .unit(request.unit())
-                .stock(request.stock())
-                .harvestDate(request.harvestDate())
                 .freshnessDays(request.freshnessDays())
                 .imageUrl(request.imageUrl())
                 .isActive(true)
                 .build();
 
-        return ProductResponse.from(productRepository.save(product));
+        return ProductResponse.withCost(productRepository.save(product));
     }
 
     @Transactional
@@ -63,24 +62,15 @@ public class ProductService {
         Category category = categoryService.getEntityById(request.categoryId());
 
         product.setCategory(category);
-        product.setVendorId(request.vendorId());
         product.setName(request.name());
         product.setDescription(request.description());
         product.setPrice(request.price());
+        product.setCostPrice(request.costPrice());
         product.setUnit(request.unit());
-        product.setStock(request.stock());
-        product.setHarvestDate(request.harvestDate());
         product.setFreshnessDays(request.freshnessDays());
         product.setImageUrl(request.imageUrl());
 
-        return ProductResponse.from(product);
-    }
-
-    @Transactional
-    public ProductResponse updateStock(UUID id, StockUpdateRequest request) {
-        Product product = getEntityById(id);
-        product.setStock(request.stock());
-        return ProductResponse.from(product);
+        return ProductResponse.withCost(product);
     }
 
     @Transactional
@@ -89,7 +79,8 @@ public class ProductService {
         product.setIsActive(false);
     }
 
-    private Product getEntityById(UUID id) {
+    @Transactional(readOnly = true)
+    public Product getEntityById(UUID id) {
         // produk yang sudah di-soft-delete dianggap tidak ada
         return productRepository.findByIdAndIsActiveTrue(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Produk tidak ditemukan: " + id));

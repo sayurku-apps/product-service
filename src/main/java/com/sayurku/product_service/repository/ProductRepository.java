@@ -23,8 +23,5 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
     Page<Product> findByCategoryIdAndIsActiveTrue(UUID categoryId, Pageable pageable);
 
     @EntityGraph(attributePaths = "category")
-    Page<Product> findByVendorIdAndIsActiveTrue(UUID vendorId, Pageable pageable);
-
-    @EntityGraph(attributePaths = "category")
     Page<Product> findByIsActiveTrueAndNameContainingIgnoreCase(String name, Pageable pageable);
 }

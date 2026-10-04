@@ -1,8 +1,9 @@
 package com.sayurku.product_service.controller;
 
+import com.sayurku.product_service.dto.BranchStockResponse;
 import com.sayurku.product_service.dto.ProductRequest;
 import com.sayurku.product_service.dto.ProductResponse;
-import com.sayurku.product_service.dto.StockUpdateRequest;
+import com.sayurku.product_service.service.BranchStockService;
 import com.sayurku.product_service.service.ProductService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +12,7 @@ import org.springframework.data.web.PagedModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -19,6 +21,7 @@ import java.util.UUID;
 public class ProductController {
 
     private final ProductService productService;
+    private final BranchStockService branchStockService;
 
     // ?categoryId= &page= &size= &sort=name,asc
     @GetMapping
@@ -32,6 +35,12 @@ public class ProductController {
         return productService.findById(id);
     }
 
+    // Stok produk ini di tiap cabang
+    @GetMapping("/{id}/stocks")
+    public List<BranchStockResponse> findStocks(@PathVariable UUID id) {
+        return branchStockService.findByProduct(id);
+    }
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ProductResponse create(@Valid @RequestBody ProductRequest request) {
@@ -41,11 +50,6 @@ public class ProductController {
     @PutMapping("/{id}")
     public ProductResponse update(@PathVariable UUID id, @Valid @RequestBody ProductRequest request) {
         return productService.update(id, request);
-    }
-
-    @PatchMapping("/{id}/stock")
-    public ProductResponse updateStock(@PathVariable UUID id, @Valid @RequestBody StockUpdateRequest request) {
-        return productService.updateStock(id, request);
     }
 
     @DeleteMapping("/{id}")
