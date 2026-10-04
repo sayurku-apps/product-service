@@ -1,1 +1,3 @@
 spring.datasource.password=password_postgres_kamu
+# Rahasia bersama untuk jalur /internal (harus sama di semua service)
+internal.token=isi_token_internal_yang_SAMA_di_semua_service
